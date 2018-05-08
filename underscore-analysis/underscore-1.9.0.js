@@ -26,7 +26,7 @@
   var previousUnderscore = root._;
 
   // Save bytes in the minified (but not gzipped) version:
-  // 保存常用对象的原型链，一方面减少查找次数，另一方面可以减少代码压缩的字符数量
+  // 保存常用对象的原型链，减少了对象成员的访问深度，避免了冗长的代码书写
   var ArrayProto = Array.prototype, ObjProto = Object.prototype;
   var SymbolProto = typeof Symbol !== 'undefined' ? Symbol.prototype : null;
 
@@ -80,7 +80,8 @@
   // functions.
   /**
    * 优化回调
-   * call方法比起apply的性能会好很多，因为apply的要对参数数组进行一系列的校验和深拷贝等
+   * 使用call比起apply的性能会好，因为apply运行前要对作为参数的数组进行一系列检验和深拷贝
+   * apply性能问题：https://segmentfault.com/q/1010000007894513
    * @param func 需优化函数
    * @param context 函数的上下文
    * @param argCount 参数的数量
@@ -112,17 +113,29 @@
   // An internal function to generate callbacks that can be applied to each
   // element in a collection, returning the desired result — either `identity`,
   // an arbitrary callback, a property matcher, or a property accessor.
+  /**
+   * 根据value来区分迭代过程并生成一个回调函数，应用在每个元素上
+   * @param value
+   * @param context
+   * @param argCount
+   */
   var cb = function(value, context, argCount) {
+    // 如果被重写，则调用重写的iteratee
     if (_.iteratee !== builtinIteratee) return _.iteratee(value, context);
+    // 如果value为空，使用自身函数
     if (value == null) return _.identity;
+    // 如果value为function ，则优化函数
     if (_.isFunction(value)) return optimizeCb(value, context, argCount);
+    // 如果value为对象，进行匹配对象
     if (_.isObject(value) && !_.isArray(value)) return _.matcher(value);
+    // 否则返回,属性获取
     return _.property(value);
   };
 
   // External wrapper for our callback generator. Users may customize
   // `_.iteratee` if they want additional predicate/iteratee shorthand styles.
   // This abstraction hides the internal-only argCount argument.
+  // 外部可以通过重写_.iteratee，进行对迭代器内部进行修改
   _.iteratee = builtinIteratee = function(value, context) {
     return cb(value, context, Infinity);
   };
@@ -132,6 +145,7 @@
   // on. This helper accumulates all remaining arguments past the function’s
   // argument length (or an explicit `startIndex`), into an array that becomes
   // the last argument. Similar to ES6’s "rest parameter".
+
   var restArguments = function(func, startIndex) {
     startIndex = startIndex == null ? func.length - 1 : +startIndex;
     return function() {
@@ -1418,6 +1432,7 @@
   };
 
   // Keep the identity function around for default iteratees.
+  // 默认迭代器：返回自身函数
   _.identity = function(value) {
     return value;
   };
