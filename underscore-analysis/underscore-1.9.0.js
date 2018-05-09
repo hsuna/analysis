@@ -115,9 +115,9 @@
   // an arbitrary callback, a property matcher, or a property accessor.
   /**
    * 根据value来区分迭代过程并生成一个回调函数，应用在每个元素上
-   * @param value
-   * @param context
-   * @param argCount
+   * @param value 迭代器
+   * @param context 函数的上下文
+   * @param argCount 参数的数量
    */
   var cb = function(value, context, argCount) {
     // 如果被重写，则调用重写的iteratee
@@ -135,7 +135,11 @@
   // External wrapper for our callback generator. Users may customize
   // `_.iteratee` if they want additional predicate/iteratee shorthand styles.
   // This abstraction hides the internal-only argCount argument.
-  // 外部可以通过重写_.iteratee，进行对迭代器内部进行修改
+  /**
+   * 外部可以通过重写_.iteratee，进行对迭代器内部进行修改
+   * @param value 迭代器
+   * @param context 函数的上下文
+   */
   _.iteratee = builtinIteratee = function(value, context) {
     return cb(value, context, Infinity);
   };
@@ -145,35 +149,52 @@
   // on. This helper accumulates all remaining arguments past the function’s
   // argument length (or an explicit `startIndex`), into an array that becomes
   // the last argument. Similar to ES6’s "rest parameter".
-
-
-  
+  /**
+   * 类似ES6的rest参数的作用，将函数的参数转化为数组
+   * let func = (a, b, c) => {console.log(a, b, c)}
+   * let rest = restArguments(func);
+   * rest(1,2,3,4,5) // 1, 2, [3, 4, 5]
+   * @param func rest函数
+   * @param startIndex rest开始长度
+   */
   var restArguments = function(func, startIndex) {
+    //func.length 表示函数定义长度，最后一个转化成rest
     startIndex = startIndex == null ? func.length - 1 : +startIndex;
     return function() {
+      // arguments.length 实际传参数长度
+      // 如果rest的startIndex大于实际传参长度，则没有rest参数
       var length = Math.max(arguments.length - startIndex, 0),
           rest = Array(length),
           index = 0;
       for (; index < length; index++) {
         rest[index] = arguments[index + startIndex];
       }
+      // 函数回调优化
       switch (startIndex) {
         case 0: return func.call(this, rest);
         case 1: return func.call(this, arguments[0], rest);
         case 2: return func.call(this, arguments[0], arguments[1], rest);
       }
       var args = Array(startIndex + 1);
+      //普通参数
       for (index = 0; index < startIndex; index++) {
         args[index] = arguments[index];
       }
+      //转化成rest的参数
       args[startIndex] = rest;
       return func.apply(this, args);
     };
   };
 
   // An internal function for creating a new object that inherits from another.
+  /**
+   * 创建一个继承原型链的函数
+   * @param 原型链
+   */ 
   var baseCreate = function(prototype) {
+    //如果prototype不存在
     if (!_.isObject(prototype)) return {};
+    // ES5 Object.create
     if (nativeCreate) return nativeCreate(prototype);
     Ctor.prototype = prototype;
     var result = new Ctor;
@@ -181,12 +202,24 @@
     return result;
   };
 
+  /**
+   * 属性获取函数，以及safe，not-null
+   * shallowProperty(prop) 可替代 obj => obj.prop
+   * @param key 对象属性key
+   */
   var shallowProperty = function(key) {
     return function(obj) {
       return obj == null ? void 0 : obj[key];
     };
   };
 
+  /** 
+   * 深度属性获取，safe，not-null
+   * deepGet({a:{b:{c:1}}}, ['a', 'b', 'c']) -> 1
+   * deepGet({a:{b:{c:1}}}, ['a', 'c', 'b']) -> undefined //not-null
+   * @param obj 获取对象
+   * @param path 对象属性数组
+   */
   var deepGet = function(obj, path) {
     var length = path.length;
     for (var i = 0; i < length; i++) {
@@ -200,8 +233,18 @@
   // should be iterated as an array or as an object.
   // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
   // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
+  
+  // JavaScript 中能精确表示的最大的整数
+  // https://www.zhihu.com/question/24423421
   var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
+  
+  // 获取长度方法
   var getLength = shallowProperty('length');
+
+  /**
+   * 判断是否类数组
+   * @param collection 判断的对象
+   */ 
   var isArrayLike = function(collection) {
     var length = getLength(collection);
     return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
@@ -213,36 +256,62 @@
   // The cornerstone, an `each` implementation, aka `forEach`.
   // Handles raw objects in addition to array-likes. Treats all
   // sparse array-likes as if they were dense.
+  /**
+   * 循环迭代
+   * @param obj 迭代对象
+   * @param iteratee 迭代器
+   * @param context 函数上下文
+   */
   _.each = _.forEach = function(obj, iteratee, context) {
+    // 这里使用optimizeCb，而不是cb是因为需要使用each是为了循环，而非处理数据
     iteratee = optimizeCb(iteratee, context);
     var i, length;
+    //类数组
     if (isArrayLike(obj)) {
       for (i = 0, length = obj.length; i < length; i++) {
         iteratee(obj[i], i, obj);
       }
     } else {
+      //可迭代的object
       var keys = _.keys(obj);
       for (i = 0, length = keys.length; i < length; i++) {
         iteratee(obj[keys[i]], keys[i], obj);
       }
     }
+    //返回原迭代对象
     return obj;
   };
 
   // Return the results of applying the iteratee to each element.
+  /**
+   * 循环迭代器，处理数据
+   * @param obj 迭代对象
+   * @param iteratee 迭代器
+   * @param context 函数上下文
+   */
   _.map = _.collect = function(obj, iteratee, context) {
+    // 这里使用cb循环迭代器处理数据
     iteratee = cb(iteratee, context);
+    // 如果是类数组，则keys为false，否则为属性数组
     var keys = !isArrayLike(obj) && _.keys(obj),
+    // 获取类数组的长度，或者属性数组的长度
         length = (keys || obj).length,
         results = Array(length);
     for (var index = 0; index < length; index++) {
       var currentKey = keys ? keys[index] : index;
       results[index] = iteratee(obj[currentKey], currentKey, obj);
     }
+    //返回迭代结果
     return results;
   };
 
   // Create a reducing function iterating left or right.
+  /**
+   * 一个递衰的迭代器
+   * @param dir -1：向左迭代，1：向右迭代
+   * dir = -1 -> _.reduce       向左递减 
+   * dir =  1 -> _.reduceRight  向右递减 
+   */
   var createReduce = function(dir) {
     // Wrap code that reassigns argument variables in a separate function than
     // the one that accesses `arguments.length` to avoid a perf hit. (#1991)
@@ -258,6 +327,7 @@
         var currentKey = keys ? keys[index] : index;
         memo = iteratee(memo, obj[currentKey], currentKey, obj);
       }
+      // 返回迭代，下次迭代调用
       return memo;
     };
 
@@ -269,12 +339,32 @@
 
   // **Reduce** builds up a single result from a list of values, aka `inject`,
   // or `foldl`.
+  /**
+   * ES5 Array.prototype.reduce
+   * @param obj 迭代对象
+   * @param iteratee 迭代器
+   * @param memo 备忘录
+   * @param initial 是否初始化
+   */
   _.reduce = _.foldl = _.inject = createReduce(1);
 
   // The right-associative version of reduce, also known as `foldr`.
+  /**
+   * ES5 Array.prototype.reduceRight
+   * @param obj 迭代对象
+   * @param iteratee 迭代器
+   * @param memo 备忘录
+   * @param initial 是否初始化
+   */
   _.reduceRight = _.foldr = createReduce(-1);
 
   // Return the first value which passes a truth test. Aliased as `detect`.
+  /**
+   * 
+   * @param obj 对象
+   * @param predicate 迭代器
+   * @param context 函数上下文
+   */
   _.find = _.detect = function(obj, predicate, context) {
     var keyFinder = isArrayLike(obj) ? _.findIndex : _.findKey;
     var key = keyFinder(obj, predicate, context);
