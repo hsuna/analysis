@@ -1156,13 +1156,19 @@
   // Generate an integer Array containing an arithmetic progression. A port of
   // the native Python `range()` function. See
   // [the Python documentation](http://docs.python.org/library/functions.html#range).
-
+  /**
+   * 创建一个规律的整数列表
+   * @param start 开始值
+   * @param stop 结束值
+   * @param step 增值
+   */
   _.range = function(start, stop, step) {
     if (stop == null) {
       stop = start || 0;
       start = 0;
     }
     if (!step) {
+      //如果stop < start 则表示负增长
       step = stop < start ? -1 : 1;
     }
 
@@ -1178,6 +1184,12 @@
 
   // Chunk a single array into multiple arrays, each containing `count` or fewer
   // items.
+  /**
+   * 将单个数组转成多个数组
+   * @param {*} array 
+   * @param {*} count 每个数组的程度
+   * @example ([1,2,3,4,5], 2) -> [[1,2], [3,4], [5]]
+   */
   _.chunk = function(array, count) {
     if (count == null || count < 1) return [];
     var result = [];
@@ -1193,8 +1205,18 @@
 
   // Determines whether to execute a function as a constructor
   // or a normal function with the provided arguments.
+  /**
+   * 执行一个函数作为构造函数或者是带参数的不同函数
+   * @param sourceFunc 原函数
+   * @param boundFunc 绑定后的函数
+   * @param context 绑定的上下文
+   * @param callingContext 调用上下文
+   * @param args 参数
+   * @returns {*}
+   */
   var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
     if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
+    //
     var self = baseCreate(sourceFunc.prototype);
     var result = sourceFunc.apply(self, args);
     if (_.isObject(result)) return result;
@@ -1204,6 +1226,9 @@
   // Create a function bound to a given object (assigning `this`, and arguments,
   // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
   // available.
+  /**
+   * 函数绑定，类是ES5的Function.bind
+   */
   _.bind = restArguments(function(func, context, args) {
     if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
     var bound = restArguments(function(callArgs) {
@@ -1407,10 +1432,14 @@
   // ----------------
 
   // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
+  /** 实现'for in'的功能 */
+  // 浏览器兼容判定
   var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
+  // 不可枚举属性
   var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
     'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
 
+  //添加不可枚举的属性
   var collectNonEnumProps = function(obj, keys) {
     var nonEnumIdx = nonEnumerableProps.length;
     var constructor = obj.constructor;
@@ -1420,6 +1449,7 @@
     var prop = 'constructor';
     if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
 
+    //将属性添加到原有的keys
     while (nonEnumIdx--) {
       prop = nonEnumerableProps[nonEnumIdx];
       if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
@@ -1430,6 +1460,11 @@
 
   // Retrieve the names of an object's own properties.
   // Delegates to **ECMAScript 5**'s native `Object.keys`.
+  /**
+   * 获取Object所有可枚举的属性
+   * 类似ES5的Object.keys
+   * @param {*} obj 
+   */
   _.keys = function(obj) {
     if (!_.isObject(obj)) return [];
     if (nativeKeys) return nativeKeys(obj);
@@ -1441,6 +1476,10 @@
   };
 
   // Retrieve all the property names of an object.
+  /**
+   * 获取Object所有的属性
+   * @param {*} obj 
+   */
   _.allKeys = function(obj) {
     if (!_.isObject(obj)) return [];
     var keys = [];
@@ -1451,6 +1490,10 @@
   };
 
   // Retrieve the values of an object's properties.
+  /**
+   * 获取Object所有可枚举的属性值
+   * @param {*} obj 
+   */
   _.values = function(obj) {
     var keys = _.keys(obj);
     var length = keys.length;
@@ -1463,6 +1506,12 @@
 
   // Returns the results of applying the iteratee to each element of the object.
   // In contrast to _.map it returns an object.
+  /**
+   * 将对象的每个属性进行转换
+   * @param {*} obj 
+   * @param {*} iteratee 
+   * @param {*} context 
+   */
   _.mapObject = function(obj, iteratee, context) {
     iteratee = cb(iteratee, context);
     var keys = _.keys(obj),
@@ -1470,6 +1519,7 @@
         results = {};
     for (var index = 0; index < length; index++) {
       var currentKey = keys[index];
+      //获取新的值
       results[currentKey] = iteratee(obj[currentKey], currentKey, obj);
     }
     return results;
@@ -1477,6 +1527,10 @@
 
   // Convert an object into a list of `[key, value]` pairs.
   // The opposite of _.object.
+  /**
+   * 将一个对象转化成数组形式：[key, value]
+   * @param {*} obj 
+   */
   _.pairs = function(obj) {
     var keys = _.keys(obj);
     var length = keys.length;
@@ -1488,6 +1542,10 @@
   };
 
   // Invert the keys and values of an object. The values must be serializable.
+  /**
+   * 将一个对象的key和value调换：obj[value] = key
+   * @param {*} obj 
+   */
   _.invert = function(obj) {
     var result = {};
     var keys = _.keys(obj);
@@ -1499,6 +1557,10 @@
 
   // Return a sorted list of the function names available on the object.
   // Aliased as `methods`.
+  /**
+   * 获取一个对象里的所有方法, 并进行排序
+   * @param {*} obj 
+   */
   _.functions = _.methods = function(obj) {
     var names = [];
     for (var key in obj) {
@@ -1857,12 +1919,18 @@
   };
 
   // Predicate-generating functions. Often useful outside of Underscore.
+  /**
+   * 使用函数的方式表示变量
+   */
   _.constant = function(value) {
     return function() {
       return value;
     };
   };
 
+  /**
+   * 空方法，防止建立太多的方法
+   */
   _.noop = function(){};
 
   // Creates a function that, when passed an object, will traverse that object’s
@@ -1913,6 +1981,9 @@
   };
 
   // A (possibly faster) way to get the current timestamp as an integer.
+  /**
+   * 获取最新的时间
+   */
   _.now = Date.now || function() {
     return new Date().getTime();
   };
