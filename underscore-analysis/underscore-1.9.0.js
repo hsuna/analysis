@@ -242,7 +242,7 @@
   var getLength = shallowProperty('length');
 
   /**
-   * 判断是否类数组
+   * 判断是否伪数组
    * @param collection 判断的对象
    */ 
   var isArrayLike = function(collection) {
@@ -266,7 +266,7 @@
     // 这里使用optimizeCb，而不是cb是因为需要使用each是为了循环，而非处理数据
     iteratee = optimizeCb(iteratee, context);
     var i, length;
-    //类数组
+    //伪数组
     if (isArrayLike(obj)) {
       for (i = 0, length = obj.length; i < length; i++) {
         iteratee(obj[i], i, obj);
@@ -292,9 +292,9 @@
   _.map = _.collect = function(obj, iteratee, context) {
     // 这里使用cb循环迭代器处理数据
     iteratee = cb(iteratee, context);
-    // 如果是类数组，则keys为false，否则为属性数组
+    // 如果是伪数组，则keys为false，否则为属性数组
     var keys = !isArrayLike(obj) && _.keys(obj),
-    // 获取类数组的长度，或者属性数组的长度
+    // 获取伪数组的长度，或者属性数组的长度
         length = (keys || obj).length,
         results = Array(length);
     for (var index = 0; index < length; index++) {
@@ -367,7 +367,7 @@
    * @return 这里返回的是匹配到的值，而非索引或者键
    */
   _.find = _.detect = function(obj, predicate, context) {
-    // 判断是否类数组，如果是，则用数组索引查找的方法，否则返回对象关键字的方法
+    // 判断是否伪数组，如果是，则用数组索引查找的方法，否则返回对象关键字的方法
     var keyFinder = isArrayLike(obj) ? _.findIndex : _.findKey;
     var key = keyFinder(obj, predicate, context);
     // 如果key存在，则返回对应的值
@@ -514,8 +514,8 @@
   // Convenience version of a common use case of `map`: fetching a property.
   /**
    * 遍历对象中的每个元素返回对应属性值
-   * @param {*} obj 遍历对象
-   * @param {*} key 属性值
+   * @param obj 遍历对象
+   * @param key 属性值
    * @return { array } 属性列表
    */
   _.pluck = function(obj, key) {
@@ -526,8 +526,8 @@
   // containing specific `key:value` pairs.
   /**
    * 遍历对象返回匹配的键对值
-   * @param {*} obj 遍历对象
-   * @param {*} attrs 键对值
+   * @param obj 遍历对象
+   * @param attrs 键对值
    * @return { array } 键对列表
    */
   _.where = function(obj, attrs) {
@@ -538,8 +538,8 @@
   // containing specific `key:value` pairs.
   /**
    * 遍历对象返回一个匹配的键对值
-   * @param {*} obj 遍历对象
-   * @param {*} attrs 键对值
+   * @param obj 遍历对象
+   * @param attrs 键对值
    * @return { array } 键对列表
    */
   _.findWhere = function(obj, attrs) {
@@ -547,9 +547,16 @@
   };
 
   // Return the maximum element (or element-based computation).
+  /**
+   * 遍历对象返回最大的元素
+   * @param obj 遍历对象
+   * @param [iteratee] 迭代器 如果有迭代器，则比较迭代后的值
+   * @param [context] 上下文
+   */
   _.max = function(obj, iteratee, context) {
     var result = -Infinity, lastComputed = -Infinity,
         value, computed;
+        // 如果迭代器为空，则直接比较对象的值
     if (iteratee == null || typeof iteratee == 'number' && typeof obj[0] != 'object' && obj != null) {
       obj = isArrayLike(obj) ? obj : _.values(obj);
       for (var i = 0, length = obj.length; i < length; i++) {
@@ -559,6 +566,7 @@
         }
       }
     } else {
+      // 否则，则比较迭代后的值
       iteratee = cb(iteratee, context);
       _.each(obj, function(v, index, list) {
         computed = iteratee(v, index, list);
@@ -572,9 +580,16 @@
   };
 
   // Return the minimum element (or element-based computation).
+  /**
+   * 遍历对象返回最小的元素
+   * @param obj 遍历对象
+   * @param [iteratee] 迭代器 如果有迭代器，则比较迭代后的值
+   * @param [context] 上下文
+   */
   _.min = function(obj, iteratee, context) {
     var result = Infinity, lastComputed = Infinity,
         value, computed;
+        // 如果迭代器为空，则直接比较对象的值
     if (iteratee == null || typeof iteratee == 'number' && typeof obj[0] != 'object' && obj != null) {
       obj = isArrayLike(obj) ? obj : _.values(obj);
       for (var i = 0, length = obj.length; i < length; i++) {
@@ -584,6 +599,7 @@
         }
       }
     } else {
+      // 否则，则比较迭代后的值
       iteratee = cb(iteratee, context);
       _.each(obj, function(v, index, list) {
         computed = iteratee(v, index, list);
@@ -597,6 +613,10 @@
   };
 
   // Shuffle a collection.
+  /**
+   * 获取一个乱序的数组
+   * @param {*} obj 可遍历对象
+   */
   _.shuffle = function(obj) {
     return _.sample(obj, Infinity);
   };
@@ -605,25 +625,42 @@
   // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
   // If **n** is not specified, returns a single random element.
   // The internal `guard` argument allows it to work with `map`.
+  /**
+   * 获取一个乱序的数组
+   * @param obj 可遍历对象，如果不是伪数组，则返回对象的values
+   * @param n 数组长度
+   * @param guard 保护值
+   * @return 返回打乱后的数组
+   */
   _.sample = function(obj, n, guard) {
+    // 随机返回一个元素
     if (n == null || guard) {
       if (!isArrayLike(obj)) obj = _.values(obj);
       return obj[_.random(obj.length - 1)];
     }
     var sample = isArrayLike(obj) ? _.clone(obj) : _.values(obj);
     var length = getLength(sample);
+    // 获取打乱的长度
     n = Math.max(Math.min(n, length), 0);
     var last = length - 1;
+    // 打乱数组，交换位置
     for (var index = 0; index < n; index++) {
       var rand = _.random(index, last);
       var temp = sample[index];
       sample[index] = sample[rand];
       sample[rand] = temp;
     }
+    // 返回打乱后的数组
     return sample.slice(0, n);
   };
 
   // Sort the object's values by a criterion produced by an iteratee.
+  /**
+   * 通过迭代器排序对象
+   * @param {*} obj 遍历对象
+   * @param {*} iteratee 迭代器
+   * @param {*} context 函数上下文
+   */
   _.sortBy = function(obj, iteratee, context) {
     var index = 0;
     iteratee = cb(iteratee, context);
@@ -631,6 +668,7 @@
       return {
         value: value,
         index: index++,
+        //元素进行迭代返回值，进行排序比较
         criteria: iteratee(value, key, list)
       };
     }).sort(function(left, right) {
@@ -645,12 +683,20 @@
   };
 
   // An internal function used for aggregate "group by" operations.
+  /**
+   * 将对象进行分组
+   * @param {*} behavior 分组规则
+   * @param {*} partition 是否分类
+   */
   var group = function(behavior, partition) {
     return function(obj, iteratee, context) {
+      //如果是分类，则只存在两种，类型，这里就使用数组装载，否则使用对象
       var result = partition ? [[], []] : {};
       iteratee = cb(iteratee, context);
       _.each(obj, function(value, index) {
+        // 通过迭代器，获取分组的key
         var key = iteratee(value, index, obj);
+        //按照key进行分组
         behavior(result, value, key);
       });
       return result;
@@ -659,12 +705,20 @@
 
   // Groups the object's values by a criterion. Pass either a string attribute
   // to group by, or a function that returns the criterion.
+  /**
+   * 根据规则将对象进行分组列表
+   */
   _.groupBy = group(function(result, value, key) {
+    //如果不存在key，则新实例一个数组
     if (_.has(result, key)) result[key].push(value); else result[key] = [value];
   });
 
   // Indexes the object's values by a criterion, similar to `groupBy`, but for
   // when you know that your index values will be unique.
+   /**
+   * 根据规则将对象进行分组，这个具有覆盖性
+   * 后面的元素会覆盖前面的元素
+   */
   _.indexBy = group(function(result, value, key) {
     result[key] = value;
   });
@@ -672,31 +726,56 @@
   // Counts instances of an object that group by a certain criterion. Pass
   // either a string attribute to count by, or a function that returns the
   // criterion.
+  /**
+   * 根据规则将对象进行分组统计
+   */
   _.countBy = group(function(result, value, key) {
+    //如果不存在key，则新实例一个数组，数量为1
     if (_.has(result, key)) result[key]++; else result[key] = 1;
   });
 
+  /**
+   * [^\ud800-\udfff]  表示不包含代理对代码点的所有字符
+   * [\ud800-\udbff][\udc00-\udfff]  表示合法的代理对的所有字符
+   * [\ud800-\udfff]  表示代理对的代码点（本身不是合法的Unicode字符）
+   */
   var reStrSymbol = /[^\ud800-\udfff]|[\ud800-\udbff][\udc00-\udfff]|[\ud800-\udfff]/g;
   // Safely create a real, live array from anything iterable.
+  /**
+   * 将对象，伪数组，字段，转化成数组
+   * @param {*} obj 
+   */
   _.toArray = function(obj) {
     if (!obj) return [];
     if (_.isArray(obj)) return slice.call(obj);
     if (_.isString(obj)) {
       // Keep surrogate pair characters together
+      // 将代理对字符放在一起
       return obj.match(reStrSymbol);
     }
+    //伪数组返回本身
     if (isArrayLike(obj)) return _.map(obj, _.identity);
+    // 对象返回键值列表
     return _.values(obj);
   };
 
   // Return the number of elements in an object.
+  /**
+   * 获取对象长度
+   * @param {*} obj 遍历对象
+   */
   _.size = function(obj) {
     if (obj == null) return 0;
+    // 如果是伪数组，则返回数组长度，否则返回键值对的数量
     return isArrayLike(obj) ? obj.length : _.keys(obj).length;
   };
 
   // Split a collection into two arrays: one whose elements all satisfy the given
   // predicate, and one whose elements all do not satisfy the predicate.
+    /**
+   * 根据规则将对象进行分类
+   * 只存在非A既B，迭代器通过boolean进行分类
+   */
   _.partition = group(function(result, value, pass) {
     result[pass ? 0 : 1].push(value);
   }, true);
@@ -707,6 +786,9 @@
   // Get the first element of an array. Passing **n** will return the first N
   // values in the array. Aliased as `head` and `take`. The **guard** check
   // allows it to work with `_.map`.
+  /**
+   * 返回数组第一个元素，如果存在n,则返回前n个
+   */
   _.first = _.head = _.take = function(array, n, guard) {
     if (array == null || array.length < 1) return void 0;
     if (n == null || guard) return array[0];
@@ -716,12 +798,21 @@
   // Returns everything but the last entry of the array. Especially useful on
   // the arguments object. Passing **n** will return all the values in
   // the array, excluding the last N.
+  /**
+   * 返回数组，剔除掉最后一个元素，如果存在n,则剔除最后n个
+   * @param {*} array 伪数组
+   * @param {*} n 数量
+   * @param {*} guard 保持值
+   */
   _.initial = function(array, n, guard) {
     return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
   };
 
   // Get the last element of an array. Passing **n** will return the last N
   // values in the array.
+  /**
+   * 返回数组最后一个元素，如果存在n，则返回最n个
+   */
   _.last = function(array, n, guard) {
     if (array == null || array.length < 1) return void 0;
     if (n == null || guard) return array[array.length - 1];
@@ -731,23 +822,42 @@
   // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
   // Especially useful on the arguments object. Passing an **n** will return
   // the rest N values in the array.
+    /**
+   * 返回数组，剔除掉第一个元素，如果存在n,则剔除n个
+   * @param {*} array 伪数组
+   * @param {*} n 数量
+   * @param {*} guard 保持值
+   */
   _.rest = _.tail = _.drop = function(array, n, guard) {
     return slice.call(array, n == null || guard ? 1 : n);
   };
 
   // Trim out all falsy values from an array.
+  /**
+   * 过滤掉所有为空的值，包括0, false, '', NaN, null, undefined
+   * @param {*} array 
+   */
   _.compact = function(array) {
     return _.filter(array, Boolean);
   };
 
   // Internal implementation of a recursive `flatten` function.
+  /**
+   * 将数组进行降维，既减多维降低成一维
+   * @param {*} input 降维数组
+   * @param {*} shallow 是否浅度降维(降低一维)
+   * @param {*} strict 
+   * @param {*} output 降维队列
+   */
   var flatten = function(input, shallow, strict, output) {
     output = output || [];
     var idx = output.length;
     for (var i = 0, length = getLength(input); i < length; i++) {
       var value = input[i];
+      // 如果是伪数组，就进行降维
       if (isArrayLike(value) && (_.isArray(value) || _.isArguments(value))) {
         // Flatten current level of array or arguments object.
+        // 如果是浅度，则直接解维，否则递归
         if (shallow) {
           var j = 0, len = value.length;
           while (j < len) output[idx++] = value[j++];
@@ -755,6 +865,8 @@
           flatten(value, shallow, strict, output);
           idx = output.length;
         }
+        // strict应该要配合shallow用的，舍弃掉第一维的数据
+        // [1, [2, 3], [4, [5]]] -> [2, 3, 4, [5]]
       } else if (!strict) {
         output[idx++] = value;
       }
@@ -763,11 +875,19 @@
   };
 
   // Flatten out an array, either recursively (by default), or just one level.
+  /**
+   * 将数组进行降维，既减多维降低成一维
+   */
   _.flatten = function(array, shallow) {
     return flatten(array, shallow, false);
   };
 
   // Return a version of the array that does not contain the specified value(s).
+  /**
+   * 跟_.difference类是，只是传参方式不同
+   * @param {rest|number} otherArrays
+   * ([1,2], 2, 3, 3, 4) -> [1]
+   */
   _.without = restArguments(function(array, otherArrays) {
     return _.difference(array, otherArrays);
   });
@@ -778,6 +898,13 @@
   // is not a one-to-one function, so providing an iteratee will disable
   // the faster algorithm.
   // Aliased as `unique`.
+  /**
+   * 数组去重
+   * @param {*} array 数组
+   * @param {*} isSorted 是否排序
+   * @param {*} iteratee 迭代器
+   * @param {*} context 函数的上下文
+   */
   _.uniq = _.unique = function(array, isSorted, iteratee, context) {
     if (!_.isBoolean(isSorted)) {
       context = iteratee;
@@ -790,14 +917,19 @@
     for (var i = 0, length = getLength(array); i < length; i++) {
       var value = array[i],
           computed = iteratee ? iteratee(value, i, array) : value;
+        //如果是顺序数组，且不存在迭代器
       if (isSorted && !iteratee) {
+        // 如果是第一个，或者与上一个不相同，则添加入result
         if (!i || seen !== computed) result.push(value);
+        // seen记录上一个值
         seen = computed;
       } else if (iteratee) {
+        // 如果seen中不存在，computed，则添加入result，且seen记录已经存在的值
         if (!_.contains(seen, computed)) {
           seen.push(computed);
           result.push(value);
         }
+        // 如果result中不存在，computed，则添加入result
       } else if (!_.contains(result, value)) {
         result.push(value);
       }
@@ -807,22 +939,35 @@
 
   // Produce an array that contains the union: each distinct element from all of
   // the passed-in arrays.
+  /**
+   * 获取多数组的并集
+   * @param {rest} 
+   */
   _.union = restArguments(function(arrays) {
+    //flatten将arrays的二维数组降维成一维数组，再去重
     return _.uniq(flatten(arrays, true, true));
   });
 
   // Produce an array that contains every item shared between all the
   // passed-in arrays.
+  /**
+   * 获取多数组的交集
+   * @param {*} array
+   * ([1,2,3,5], [3,4,5,8],[1,3,5,7]) -> [3,5]
+   */
   _.intersection = function(array) {
     var result = [];
     var argsLength = arguments.length;
     for (var i = 0, length = getLength(array); i < length; i++) {
       var item = array[i];
+      //如果已经存在，则跳过，这里也有去重的用意
       if (_.contains(result, item)) continue;
       var j;
       for (j = 1; j < argsLength; j++) {
+        //如果其他数组不包含该数据，则跳出循环
         if (!_.contains(arguments[j], item)) break;
       }
+      //校验了所有数组都包含该数据，则添加该数值
       if (j === argsLength) result.push(item);
     }
     return result;
@@ -830,8 +975,16 @@
 
   // Take the difference between one array and a number of other arrays.
   // Only the elements present in just the first array will remain.
+  /**
+   * 获取数组的补集，array的补集
+   * @param {rest|array} rest 
+   * ([1,2], [2,3], [3,4]) -> [1]
+   * 话说这里如果array本身存在重复数据的话，好像也不去重
+   */
   _.difference = restArguments(function(array, rest) {
+    //flatten将arrays的二维数组降维成一维数组
     rest = flatten(rest, true, true);
+    //过滤掉其他数组存在的数值
     return _.filter(array, function(value){
       return !_.contains(rest, value);
     });
@@ -839,11 +992,17 @@
 
   // Complement of _.zip. Unzip accepts an array of arrays and groups
   // each array's elements on shared indices.
+  /** 
+   * 将每个数组同位置的值合并成一个
+   * [[1,2,3], ['a','b','c'], [true, false, true]] -> [{1, 'a', true}, {2, 'b', false}, {3, 'c', true}]
+   * @param array
+   */
   _.unzip = function(array) {
     var length = array && _.max(array, getLength).length || 0;
     var result = Array(length);
 
     for (var index = 0; index < length; index++) {
+      //同位置数组合并成对象
       result[index] = _.pluck(array, index);
     }
     return result;
@@ -851,17 +1010,29 @@
 
   // Zip together multiple lists into a single array -- elements that share
   // an index go together.
+  /**
+   * 以rest的形式传入
+   * ([1,2,3], ['a','b','c'], [true, false, true]) -> [{1, 'a', true}, {2, 'b', false}, {3, 'c', true}]
+   */
   _.zip = restArguments(_.unzip);
 
   // Converts lists into objects. Pass either a single array of `[key, value]`
   // pairs, or two parallel arrays of the same length -- one of keys, and one of
   // the corresponding values. Passing by pairs is the reverse of _.pairs.
+  /**
+   * 将数组转换为对象
+   * @param list 
+   * @param values 
+   * @returns {object}
+   */
   _.object = function(list, values) {
     var result = {};
     for (var i = 0, length = getLength(list); i < length; i++) {
       if (values) {
+        //如果存在value, 则list=[ key ], values = [value]
         result[list[i]] = values[i];
       } else {
+        //否则，list = [[key, value]]
         result[list[i][0]] = list[i][1];
       }
     }
@@ -930,11 +1101,11 @@
   // Generator function to create the indexOf and lastIndexOf functions.
   /**
    * indexOf和lastIndexOf的函数生成器
-   * @param {*} dir 查找方向
+   * @param dir 查找方向
    * dir =  1 -> 正向查找
    * dir = -1 -> 反向查找
-   * @param {*} predicateFind 
-   * @param {*} sortedIndex 二分查找，性能优化
+   * @param predicateFind 
+   * @param sortedIndex 二分查找，性能优化
    */
   var createIndexFinder = function(dir, predicateFind, sortedIndex) {
     return function(array, item, idx) {
@@ -1385,9 +1556,9 @@
   // Internal pick helper function to determine if `obj` has key `key`.
   /**
    * 判断key是否为对象的属性，这里将其写成一个迭代器
-   * @param {*} value 
-   * @param {*} key 
-   * @param {*} obj 
+   * @param value 
+   * @param key 
+   * @param obj 
    */
   var keyInObj = function(value, key, obj) {
     return key in obj;
