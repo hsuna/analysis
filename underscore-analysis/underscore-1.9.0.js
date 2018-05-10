@@ -360,41 +360,72 @@
 
   // Return the first value which passes a truth test. Aliased as `detect`.
   /**
-   * 
+   * 查找对象
    * @param obj 对象
-   * @param predicate 迭代器
+   * @param predicate 匹配器
    * @param context 函数上下文
+   * @return 这里返回的是匹配到的值，而非索引或者键
    */
   _.find = _.detect = function(obj, predicate, context) {
+    // 判断是否类数组，如果是，则用数组索引查找的方法，否则返回对象关键字的方法
     var keyFinder = isArrayLike(obj) ? _.findIndex : _.findKey;
     var key = keyFinder(obj, predicate, context);
+    // 如果key存在，则返回对应的值
     if (key !== void 0 && key !== -1) return obj[key];
+    // 否则返回`undefinded`
   };
 
   // Return all the elements that pass a truth test.
   // Aliased as `select`.
+  /**
+   * 过滤对象
+   * @param obj 对象
+   * @param predicate 匹配器
+   * @param context 函数上下文
+   * @return 返回匹配到的数组
+   */
   _.filter = _.select = function(obj, predicate, context) {
     var results = [];
     predicate = cb(predicate, context);
+    // 循环对象
     _.each(obj, function(value, index, list) {
+      // 过滤匹配
       if (predicate(value, index, list)) results.push(value);
     });
+    // 返回匹配数组
     return results;
   };
 
   // Return all the elements for which a truth test fails.
+  /**
+   * 筛选对象
+   * @param obj 对象
+   * @param predicate 匹配器
+   * @param context 函数上下文
+   * @return 返回筛选过的数组
+   */
   _.reject = function(obj, predicate, context) {
+    // 和匹配数组一样，但是_.negate返回的是一个相反的判断
     return _.filter(obj, _.negate(cb(predicate)), context);
   };
 
   // Determine whether all of the elements match a truth test.
   // Aliased as `all`.
+  /**
+   * 类ES5 Array.prototype.every
+   * 判定对象是否全部匹配条件，如果有一项不匹配，则返回false
+   * @param obj 对象
+   * @param predicate 匹配器
+   * @param context 函数上下文
+   * @return {boolean}
+   */
   _.every = _.all = function(obj, predicate, context) {
     predicate = cb(predicate, context);
     var keys = !isArrayLike(obj) && _.keys(obj),
         length = (keys || obj).length;
     for (var index = 0; index < length; index++) {
       var currentKey = keys ? keys[index] : index;
+      // 如果发现一个不匹配，直接return，就不往下遍历了
       if (!predicate(obj[currentKey], currentKey, obj)) return false;
     }
     return true;
@@ -402,12 +433,21 @@
 
   // Determine if at least one element in the object matches a truth test.
   // Aliased as `any`.
+  /**
+   * 类ES5 Array.prototype.some
+   * 判定对象是否有匹配条件，如果有一项匹配，则返回true
+   * @param obj 对象
+   * @param predicate 匹配器
+   * @param context 函数上下文
+   * @return {boolean}
+   */
   _.some = _.any = function(obj, predicate, context) {
     predicate = cb(predicate, context);
     var keys = !isArrayLike(obj) && _.keys(obj),
         length = (keys || obj).length;
     for (var index = 0; index < length; index++) {
       var currentKey = keys ? keys[index] : index;
+      // 如果发现一个匹配，直接return，就不往下遍历了
       if (predicate(obj[currentKey], currentKey, obj)) return true;
     }
     return false;
@@ -783,20 +823,40 @@
   };
 
   // Generator function to create the findIndex and findLastIndex functions.
+  /**
+   * 闭包
+   * @param dir 
+   * dir = 1 -> 从前往后找
+   * dir = 1 -> 从后往前找
+   */
   var createPredicateIndexFinder = function(dir) {
+    /**
+     * @param array 数组
+     * @param predicate 匹配器
+     * @param context 上下文
+     */
     return function(array, predicate, context) {
       predicate = cb(predicate, context);
       var length = getLength(array);
+      // 根据方向，判定是从开始，还是末尾查找
       var index = dir > 0 ? 0 : length - 1;
       for (; index >= 0 && index < length; index += dir) {
+        // 如果判定成功，则返回匹配到的索引
         if (predicate(array[index], index, array)) return index;
       }
+      //否则返回-1
       return -1;
     };
   };
 
   // Returns the first index on an array-like that passes a predicate test.
+  /**
+   * 从前往后找到数组中匹配的元素，返回索引
+   */
   _.findIndex = createPredicateIndexFinder(1);
+  /**
+   * 从后往前找到数组中匹配的元素，返回索引
+   */
   _.findLastIndex = createPredicateIndexFinder(-1);
 
   // Use a comparator function to figure out the smallest index at which
@@ -1046,6 +1106,7 @@
   };
 
   // Returns a negated version of the passed-in predicate.
+  // 返回一个相反的判定
   _.negate = function(predicate) {
     return function() {
       return !predicate.apply(this, arguments);
@@ -1223,16 +1284,32 @@
   _.extendOwn = _.assign = createAssigner(_.keys);
 
   // Returns the first key on an object that passes a predicate test.
+  /**
+   * 查找匹配对象，返回key
+   * @param obj  查找对象
+   * @param predicate 匹配器
+   * @param context 上下文
+   */
   _.findKey = function(obj, predicate, context) {
     predicate = cb(predicate, context);
+    // 获取key列表
     var keys = _.keys(obj), key;
+    // 遍历keys
     for (var i = 0, length = keys.length; i < length; i++) {
       key = keys[i];
+      //如果匹配 则返回该key
       if (predicate(obj[key], key, obj)) return key;
     }
+    //没有匹配成功，返回undefined
   };
 
   // Internal pick helper function to determine if `obj` has key `key`.
+  /**
+   * 判断key是否为对象的属性，这里将其写成一个迭代器
+   * @param {*} value 
+   * @param {*} key 
+   * @param {*} obj 
+   */
   var keyInObj = function(value, key, obj) {
     return key in obj;
   };
