@@ -360,7 +360,7 @@
 
   // Return the first value which passes a truth test. Aliased as `detect`.
   /**
-   * 查找对象
+   * 通过匹配条件进行查找元素
    * @param obj 对象
    * @param predicate 匹配器
    * @param context 函数上下文
@@ -378,11 +378,11 @@
   // Return all the elements that pass a truth test.
   // Aliased as `select`.
   /**
-   * 过滤对象
+   * 通过匹配条件进行过滤元素
    * @param obj 对象
    * @param predicate 匹配器
    * @param context 函数上下文
-   * @return 返回匹配到的数组
+   * @return 返回过滤数组
    */
   _.filter = _.select = function(obj, predicate, context) {
     var results = [];
@@ -398,11 +398,11 @@
 
   // Return all the elements for which a truth test fails.
   /**
-   * 筛选对象
+   * 通过匹配条件进行排除元素
    * @param obj 对象
    * @param predicate 匹配器
    * @param context 函数上下文
-   * @return 返回筛选过的数组
+   * @return 返回筛选数组
    */
   _.reject = function(obj, predicate, context) {
     // 和匹配数组一样，但是_.negate返回的是一个相反的判断
@@ -413,7 +413,7 @@
   // Aliased as `all`.
   /**
    * 类ES5 Array.prototype.every
-   * 判定对象是否全部匹配条件，如果有一项不匹配，则返回false
+   * 判定所有元素是否匹配条件，如果有一个不匹配，则返回false
    * @param obj 对象
    * @param predicate 匹配器
    * @param context 函数上下文
@@ -435,7 +435,7 @@
   // Aliased as `any`.
   /**
    * 类ES5 Array.prototype.some
-   * 判定对象是否有匹配条件，如果有一项匹配，则返回true
+   * 判定是否有一个元素匹配条件的，如果有，则返回true
    * @param obj 对象
    * @param predicate 匹配器
    * @param context 函数上下文
@@ -455,47 +455,93 @@
 
   // Determine if the array or object contains a given item (using `===`).
   // Aliased as `includes` and `include`.
+  /**
+   * 判定数组或者对象是否存在指定元素
+   * @param obj 对象列表
+   * @param item 匹配对象
+   * @param fromIndex 查找位置
+   * @param guard 
+   * @return {boolean}
+   */
   _.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {
+    // 如果为非对象，则将值列表收取出来作为对象列表
     if (!isArrayLike(obj)) obj = _.values(obj);
+    // guard是个保护值，感觉没啥用滴？
     if (typeof fromIndex != 'number' || guard) fromIndex = 0;
+    // 如果返回不是-1 则说明存在
     return _.indexOf(obj, item, fromIndex) >= 0;
   };
 
   // Invoke a method (with arguments) on every item in a collection.
+  /**
+   * 遍历对象中的每个元素都调用一个函数
+  // 返回调用后的结果（数组或者关联数组）
+   * @param obj 对象列表
+   * @param path 这里可以传入一个对象的函数或者是函数名
+   * @param args path函数的参数
+   * @return { array } 调用结果
+   */
   _.invoke = restArguments(function(obj, path, args) {
     var contextPath, func;
+    // 如果path是个function，则直接使用
     if (_.isFunction(path)) {
       func = path;
+      // 如果是个数组，则表示对象函数
     } else if (_.isArray(path)) {
+      // 函数的上下文
       contextPath = path.slice(0, -1);
+      // 函数名
       path = path[path.length - 1];
     }
+    // 闭包，优化函数
     return _.map(obj, function(context) {
       var method = func;
       if (!method) {
+        // 通过深度获取，获取函数的上下文，
+        // 这里之所以获取函数的上下文，是为了传入后面的回调
         if (contextPath && contextPath.length) {
           context = deepGet(context, contextPath);
         }
         if (context == null) return void 0;
+        // 如果存在该上下文，则返回方法
         method = context[path];
       }
+      // 如果存在方法，则返回回调值，否则为null
       return method == null ? method : method.apply(context, args);
     });
   });
 
   // Convenience version of a common use case of `map`: fetching a property.
+  /**
+   * 遍历对象中的每个元素返回对应属性值
+   * @param {*} obj 遍历对象
+   * @param {*} key 属性值
+   * @return { array } 属性列表
+   */
   _.pluck = function(obj, key) {
     return _.map(obj, _.property(key));
   };
 
   // Convenience version of a common use case of `filter`: selecting only objects
   // containing specific `key:value` pairs.
+  /**
+   * 遍历对象返回匹配的键对值
+   * @param {*} obj 遍历对象
+   * @param {*} attrs 键对值
+   * @return { array } 键对列表
+   */
   _.where = function(obj, attrs) {
     return _.filter(obj, _.matcher(attrs));
   };
 
   // Convenience version of a common use case of `find`: getting the first object
   // containing specific `key:value` pairs.
+  /**
+   * 遍历对象返回一个匹配的键对值
+   * @param {*} obj 遍历对象
+   * @param {*} attrs 键对值
+   * @return { array } 键对列表
+   */
   _.findWhere = function(obj, attrs) {
     return _.find(obj, _.matcher(attrs));
   };
@@ -826,8 +872,8 @@
   /**
    * 闭包
    * @param dir 
-   * dir = 1 -> 从前往后找
-   * dir = 1 -> 从后往前找
+   * dir =  1 -> 正向查找
+   * dir = -1 -> 反向查找
    */
   var createPredicateIndexFinder = function(dir) {
     /**
@@ -851,45 +897,75 @@
 
   // Returns the first index on an array-like that passes a predicate test.
   /**
-   * 从前往后找到数组中匹配的元素，返回索引
+   * 正向找到数组中匹配的元素，返回索引
    */
   _.findIndex = createPredicateIndexFinder(1);
   /**
-   * 从后往前找到数组中匹配的元素，返回索引
+   * 反向找到数组中匹配的元素，返回索引
    */
   _.findLastIndex = createPredicateIndexFinder(-1);
 
   // Use a comparator function to figure out the smallest index at which
   // an object should be inserted so as to maintain order. Uses binary search.
+  /**
+   * 有序数组二分查找
+   * @param array 查找的数组
+   * @param obj 匹配的对象
+   * @param iteratee 匹配器
+   * @param context 函数上下文
+   */
   _.sortedIndex = function(array, obj, iteratee, context) {
+    //如果iteratee为空，则返回自身
     iteratee = cb(iteratee, context, 1);
     var value = iteratee(obj);
     var low = 0, high = getLength(array);
     while (low < high) {
       var mid = Math.floor((low + high) / 2);
+      //判定中间数，进行折中的筛选
       if (iteratee(array[mid]) < value) low = mid + 1; else high = mid;
     }
     return low;
   };
 
   // Generator function to create the indexOf and lastIndexOf functions.
+  /**
+   * indexOf和lastIndexOf的函数生成器
+   * @param {*} dir 查找方向
+   * dir =  1 -> 正向查找
+   * dir = -1 -> 反向查找
+   * @param {*} predicateFind 
+   * @param {*} sortedIndex 二分查找，性能优化
+   */
   var createIndexFinder = function(dir, predicateFind, sortedIndex) {
     return function(array, item, idx) {
       var i = 0, length = getLength(array);
+      // 如果idx是数值，则表示查找位置
       if (typeof idx == 'number') {
+        // 修改查找位置
         if (dir > 0) {
+          // 正向
           i = idx >= 0 ? idx : Math.max(idx + length, i);
         } else {
+          // 反向
           length = idx >= 0 ? Math.min(idx + 1, length) : idx + length + 1;
         }
+        // 如果是有序列表，则使用二分查找
+        // idx是个非数值的判定值，表示数组是否有序，
+        // 如果非有序数组，却使用了true，那就有可能会出错，
+        // 这里是外部调用是进行优化的，并没有容错性
       } else if (sortedIndex && idx && length) {
         idx = sortedIndex(array, item);
+        // 如果没找到，则返回-1
         return array[idx] === item ? idx : -1;
       }
+      // 这里看了好久，一直没主要下面的NaN，用于判断item是否NaN
       if (item !== item) {
+        // 如果是，则查找出第一个NaN的位置
         idx = predicateFind(slice.call(array, i, length), _.isNaN);
+        // 进行判断位置是否相等
         return idx >= 0 ? idx + i : -1;
       }
+      // 遍历查找
       for (idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir) {
         if (array[idx] === item) return idx;
       }
@@ -901,12 +977,15 @@
   // or -1 if the item is not included in the array.
   // If the array is large and already in sort order, pass `true`
   // for **isSorted** to use binary search.
+  // 正向查找
   _.indexOf = createIndexFinder(1, _.findIndex, _.sortedIndex);
+  // 反向查找
   _.lastIndexOf = createIndexFinder(-1, _.findLastIndex);
 
   // Generate an integer Array containing an arithmetic progression. A port of
   // the native Python `range()` function. See
   // [the Python documentation](http://docs.python.org/library/functions.html#range).
+
   _.range = function(start, stop, step) {
     if (stop == null) {
       stop = start || 0;
