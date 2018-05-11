@@ -53,6 +53,7 @@
   var _ = function(obj) {
     if (obj instanceof _) return obj;
     if (!(this instanceof _)) return new _(obj);
+    // 赋值给包装器
     this._wrapped = obj;
   };
 
@@ -1456,8 +1457,8 @@
   // conditionally execute the original function.
   /**
    * 将第一个函数封装到第二个函数里面
-   * @param {*} func 
-   * @param {*} wrapper 
+   * @param func 
+   * @param wrapper 
    */
   _.wrap = function(func, wrapper) {
     return _.partial(wrapper, func);
@@ -1491,8 +1492,8 @@
   // Returns a function that will only be executed on and after the Nth call.
   /**
    * 创建一个函数，限制调用超过times次才有返回值
-   * @param {*} times 次数
-   * @param {*} func 
+   * @param times 次数
+   * @param func 
    */
   _.after = function(times, func) {
     return function() {
@@ -1505,8 +1506,8 @@
   // Returns a function that will only be executed up to (but not including) the Nth call.
   /**
    * 创建一个函数，限制调用不超过times次
-   * @param {*} times 次数
-   * @param {*} func 
+   * @param times 次数
+   * @param func 
    */
   _.before = function(times, func) {
     var memo;
@@ -1670,8 +1671,8 @@
   /**
    * 创建分配器函数
    * 类似ES6 Object.assign
-   * @param {*} keysFunc 获取keys的方法
-   * @param {*} defaults 是否使用默认属性值，如果有的话，默认为false，既是不覆盖
+   * @param keysFunc 获取keys的方法
+   * @param defaults 是否使用默认属性值，如果有的话，默认为false，既是不覆盖
    */
   var createAssigner = function(keysFunc, defaults) {
     return function(obj) {
@@ -1734,6 +1735,10 @@
   };
 
   // Return a copy of the object only containing the whitelisted properties.
+  /**
+   * 通过迭代器，或者是属性列表，创建一个包含这些属性的对象
+   * 白名单属性对象
+   */
   _.pick = restArguments(function(obj, keys) {
     var result = {}, iteratee = keys[0];
     if (obj == null) return result;
@@ -1754,6 +1759,10 @@
   });
 
   // Return a copy of the object without the blacklisted properties.
+  /**
+   * 通过迭代器，或者是属性列表，创建一个不包含这些属性的对象
+   * 黑名单属性对象
+   */
   _.omit = restArguments(function(obj, keys) {
     var iteratee = keys[0], context;
     if (_.isFunction(iteratee)) {
@@ -1769,11 +1778,21 @@
   });
 
   // Fill in a given object with default properties.
+  /**
+   * 类似_.extend，不过这里赋值时，如果有默认值，则使用默认值
+   * 不具有覆盖性
+   */
   _.defaults = createAssigner(_.allKeys, true);
 
   // Creates an object that inherits from the given prototype object.
   // If additional properties are provided then they will be added to the
   // created object.
+  /**
+   * 通过原型链创建一个对象，并绑定其属性
+   * 类似ES6 Object.create
+   * @param prototype 
+   * @param props 
+   */
   _.create = function(prototype, props) {
     var result = baseCreate(prototype);
     if (props) _.extendOwn(result, props);
@@ -1781,6 +1800,10 @@
   };
 
   // Create a (shallow-cloned) duplicate of an object.
+  /**
+   * 克隆对象，如果是简单对象，着直接返回，否则采取浅度克隆
+   * @param obj 
+   */
   _.clone = function(obj) {
     if (!_.isObject(obj)) return obj;
     return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
@@ -1789,12 +1812,23 @@
   // Invokes interceptor with the obj, and then returns obj.
   // The primary purpose of this method is to "tap into" a method chain, in
   // order to perform operations on intermediate results within the chain.
+  /**
+   * 链式调用时用的，其实就是将对象当作参数执行一个方法，而又返回该对象
+   * @param obj 
+   * @param interceptor 
+   */
   _.tap = function(obj, interceptor) {
     interceptor(obj);
     return obj;
   };
 
   // Returns whether an object has a given set of `key:value` pairs.
+  /**
+   * 判定一个对象里是否匹配所有键值对
+   * @param object 
+   * @param attrs 
+   * @return {boolean}
+   */
   _.isMatch = function(object, attrs) {
     var keys = _.keys(attrs), length = keys.length;
     if (object == null) return !length;
@@ -1809,15 +1843,25 @@
 
   // Internal recursive comparison function for `isEqual`.
   var eq, deepEq;
+  /**
+   * 
+   */
   eq = function(a, b, aStack, bStack) {
+    // 简单类型的比较
     // Identical objects are equal. `0 === -0`, but they aren't identical.
     // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
+    // 1 / a === 1 / b 是为了判定 0 === -0为false
+    // 这里已经判定了a === b这种情况，所以下面的代码不再比较这样的情况了
     if (a === b) return a !== 0 || 1 / a === 1 / b;
     // `null` or `undefined` only equal to itself (strict comparison).
+    
+    
     if (a == null || b == null) return false;
     // `NaN`s are equivalent, but non-reflexive.
+    // 如果a和b是NaN的话
     if (a !== a) return b !== b;
     // Exhaust primitive checks
+    // 复杂类型的比较
     var type = typeof a;
     if (type !== 'function' && type !== 'object' && typeof b != 'object') return false;
     return deepEq(a, b, aStack, bStack);
@@ -1826,6 +1870,7 @@
   // Internal recursive comparison function for `isEqual`.
   /**
    * _.isEqual 判定对象是否相等
+   * 复杂类型
    */
   deepEq = function(a, b, aStack, bStack) {
     // Unwrap any wrapped objects.
@@ -1843,6 +1888,7 @@
       case '[object String]':
         // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
         // equivalent to `new String("5")`.
+        // 字段判定，RegExp类似字段
         return '' + a === '' + b;
       case '[object Number]':
         // `NaN`s are equivalent, but non-reflexive.
@@ -1857,18 +1903,21 @@
         // Coerce dates and booleans to numeric primitive values. Dates are compared by their
         // millisecond representations. Note that invalid dates with millisecond representations
         // of `NaN` are not equivalent.
+        // Date和Boolean都可以转化成数值
         return +a === +b;
       case '[object Symbol]':
         return SymbolProto.valueOf.call(a) === SymbolProto.valueOf.call(b);
     }
 
     var areArrays = className === '[object Array]';
+    // 非数组类型时
     if (!areArrays) {
       if (typeof a != 'object' || typeof b != 'object') return false;
 
       // Objects with different constructors are not equivalent, but `Object`s or `Array`s
       // from different frames are.
       var aCtor = a.constructor, bCtor = b.constructor;
+      //  a和b是构造函数的话，进行判定是否通过函数的实例
       if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
                                _.isFunction(bCtor) && bCtor instanceof bCtor)
                           && ('constructor' in a && 'constructor' in b)) {
@@ -1880,12 +1929,14 @@
 
     // Initializing stack of traversed objects.
     // It's done here since we only need them for objects and arrays comparison.
+    // 将a和b放入堆中
     aStack = aStack || [];
     bStack = bStack || [];
     var length = aStack.length;
     while (length--) {
       // Linear search. Performance is inversely proportional to the number of
       // unique nested structures.
+      // 如果是自身，说明递归结束
       if (aStack[length] === a) return bStack[length] === b;
     }
 
@@ -1894,15 +1945,18 @@
     bStack.push(b);
 
     // Recursively compare objects and arrays.
+    //如果是数组的话
     if (areArrays) {
       // Compare array lengths to determine if a deep comparison is necessary.
       length = a.length;
       if (length !== b.length) return false;
       // Deep compare the contents, ignoring non-numeric properties.
       while (length--) {
+        //递归比较
         if (!eq(a[length], b[length], aStack, bStack)) return false;
       }
     } else {
+      // 如果是对象，则获取keys
       // Deep compare objects.
       var keys = _.keys(a), key;
       length = keys.length;
@@ -1911,22 +1965,33 @@
       while (length--) {
         // Deep compare each member
         key = keys[length];
+        //递归比较
         if (!(_.has(b, key) && eq(a[key], b[key], aStack, bStack))) return false;
       }
     }
     // Remove the first object from the stack of traversed objects.
+    // 剔除比较过的对象
     aStack.pop();
     bStack.pop();
     return true;
   };
 
   // Perform a deep comparison to check if two objects are equal.
+  /**
+   * 比较两个对象
+   * @param a 
+   * @param b 
+   */
   _.isEqual = function(a, b) {
     return eq(a, b);
   };
 
   // Is a given array, string, or object empty?
   // An "empty" object has no enumerable own-properties.
+  /**
+   * 判定一个字段，数组，对象是否为空，包括空字段，空类数组，空对象', null, undefined
+   * @param obj 
+   */
   _.isEmpty = function(obj) {
     if (obj == null) return true;
     if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;
@@ -1934,6 +1999,10 @@
   };
 
   // Is a given value a DOM element?
+  /**
+   * 判定是否为Dom元素
+   * @param obj 
+   */
   _.isElement = function(obj) {
     return !!(obj && obj.nodeType === 1);
   };
@@ -1949,12 +2018,19 @@
   };
 
   // Is a given variable an object?
+  /**
+   * 判定对象或函数
+   * @param {*} obj 
+   */
   _.isObject = function(obj) {
     var type = typeof obj;
     return type === 'function' || type === 'object' && !!obj;
   };
 
   // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError, isMap, isWeakMap, isSet, isWeakSet.
+  /**
+   * 创建所有类型判定的方法 isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError, isMap, isWeakMap, isSet, isWeakSet
+   */
   _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error', 'Symbol', 'Map', 'WeakMap', 'Set', 'WeakSet'], function(name) {
     _['is' + name] = function(obj) {
       return toString.call(obj) === '[object ' + name + ']';
@@ -1963,6 +2039,10 @@
 
   // Define a fallback version of the method in browsers (ahem, IE < 9), where
   // there isn't any inspectable "Arguments" type.
+  /**
+   * 判定是否为函数参数
+   * IE < 9
+   */
   if (!_.isArguments(arguments)) {
     _.isArguments = function(obj) {
       return _.has(obj, 'callee');
@@ -1974,37 +2054,64 @@
   var nodelist = root.document && root.document.childNodes;
   if (typeof /./ != 'function' && typeof Int8Array != 'object' && typeof nodelist != 'function') {
     _.isFunction = function(obj) {
+      //旧的浏览器的兼容问题
       return typeof obj == 'function' || false;
     };
   }
 
   // Is a given object a finite number?
+  /**
+   * 判定有限数字
+   * @param {*} obj 
+   */
   _.isFinite = function(obj) {
     return !_.isSymbol(obj) && isFinite(obj) && !isNaN(parseFloat(obj));
   };
 
   // Is the given value `NaN`?
+  /**
+   * 判定NaN
+   * @param {*} obj 
+   */
   _.isNaN = function(obj) {
+    //先判定是否为数字
     return _.isNumber(obj) && isNaN(obj);
   };
 
   // Is a given value a boolean?
+  /**
+   * 判定boolean
+   * @param {*} obj 
+   */
   _.isBoolean = function(obj) {
     return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
   };
 
   // Is a given value equal to null?
+  /**
+   * 判定null
+   * @param {*} obj 
+   */
   _.isNull = function(obj) {
     return obj === null;
   };
 
   // Is a given variable undefined?
+  /**
+   * 判定undefined
+   * @param {*} obj 
+   */
   _.isUndefined = function(obj) {
     return obj === void 0;
   };
 
   // Shortcut function for checking if an object has a given property directly
   // on itself (in other words, not on a prototype).
+  /**
+   * 判定对象是否包含属性，如果path是数组，则判断多个
+   * @param {*} obj 
+   * @param {*} path 
+   */
   _.has = function(obj, path) {
     if (!_.isArray(path)) {
       return obj != null && hasOwnProperty.call(obj, path);
@@ -2017,6 +2124,7 @@
       }
       obj = obj[key];
     }
+    // 这里将number->boolean
     return !!length;
   };
 
@@ -2025,6 +2133,9 @@
 
   // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
   // previous owner. Returns a reference to the Underscore object.
+  /**
+   * 返回underscore对象，将_赋给原本的所有者
+   */
   _.noConflict = function() {
     root._ = previousUnderscore;
     return this;
@@ -2038,7 +2149,7 @@
 
   // Predicate-generating functions. Often useful outside of Underscore.
   /**
-   * 使用函数的方式表示变量
+   * 使用迭代器的方式表示变量
    */
   _.constant = function(value) {
     return function() {
@@ -2053,6 +2164,10 @@
 
   // Creates a function that, when passed an object, will traverse that object’s
   // properties down the given `path`, specified as an array of keys or indexes.
+  /**
+   * 传入属性名返回一个函数，用于获取传入对象的属性值
+   * @param {*} path 
+   */
   _.property = function(path) {
     if (!_.isArray(path)) {
       return shallowProperty(path);
@@ -2063,6 +2178,10 @@
   };
 
   // Generates a function for a given object that returns a given property.
+  /**
+   * 传入对象返回一个函数，用于获取对象的传入属性值
+   * @param {*} path 
+   */
   _.propertyOf = function(obj) {
     if (obj == null) {
       return function(){};
@@ -2074,6 +2193,9 @@
 
   // Returns a predicate for checking whether an object has a given set of
   // `key:value` pairs.
+  /**
+   * 返回一个函数，该函数用于判定传入对象中是否匹配固定的属性值
+   */
   _.matcher = _.matches = function(attrs) {
     attrs = _.extendOwn({}, attrs);
     return function(obj) {
@@ -2082,6 +2204,12 @@
   };
 
   // Run a function **n** times.
+  /**
+   * 调用给定的迭代函数n次
+   * @param {*} n 
+   * @param {*} iteratee 
+   * @param {*} context 
+   */
   _.times = function(n, iteratee, context) {
     var accum = Array(Math.max(0, n));
     iteratee = optimizeCb(iteratee, context, 1);
@@ -2090,6 +2218,11 @@
   };
 
   // Return a random integer between min and max (inclusive).
+  /**
+   * 获取[min-max]的随机整数
+   * @param {*} min 
+   * @param {*} max 如果max为空，则min=0, max=min
+   */
   _.random = function(min, max) {
     if (max == null) {
       max = min;
@@ -2107,6 +2240,7 @@
   };
 
   // List of HTML entities for escaping.
+  // HTML编码
   var escapeMap = {
     '&': '&amp;',
     '<': '&lt;',
@@ -2115,6 +2249,7 @@
     "'": '&#x27;',
     '`': '&#x60;'
   };
+  // HTML解码
   var unescapeMap = _.invert(escapeMap);
 
   // Functions for escaping and unescaping strings to/from HTML interpolation.
@@ -2123,6 +2258,7 @@
       return map[match];
     };
     // Regexes for identifying a key that needs to be escaped.
+    // 正则
     var source = '(?:' + _.keys(map).join('|') + ')';
     var testRegexp = RegExp(source);
     var replaceRegexp = RegExp(source, 'g');
@@ -2131,12 +2267,21 @@
       return testRegexp.test(string) ? string.replace(replaceRegexp, escaper) : string;
     };
   };
+  // 编码，防止XSS攻击
   _.escape = createEscaper(escapeMap);
+  // 解码
   _.unescape = createEscaper(unescapeMap);
 
   // Traverses the children of `obj` along `path`. If a child is a function, it
   // is invoked with its parent as context. Returns the value of the final
   // child, or `fallback` if any child is undefined.
+  /**
+   * 通过属性链，返回对象的值，如果是函数，则通过调用上下文，返回该函数的值，
+   * 如果不存在属性链，则返回fallback的值，如果fallback是函数，则通过调用上下文，返回该函数的值
+   * @param {*} obj 
+   * @param {*} path 
+   * @param {*} fallback 
+   */
   _.result = function(obj, path, fallback) {
     if (!_.isArray(path)) path = [path];
     var length = path.length;
@@ -2157,6 +2302,10 @@
   // Generate a unique integer id (unique within the entire client session).
   // Useful for temporary DOM ids.
   var idCounter = 0;
+  /**
+   * 建立唯一id
+   * @param {*} prefix 
+   */
   _.uniqueId = function(prefix) {
     var id = ++idCounter + '';
     return prefix ? prefix + id : id;
@@ -2164,6 +2313,12 @@
 
   // By default, Underscore uses ERB-style template delimiters, change the
   // following template settings to use alternative delimiters.
+  /**
+   * 三种渲染模板
+   * 1. <%  %>
+   * 2. <%= %>
+   * 3. <%- %>
+   */
   _.templateSettings = {
     evaluate: /<%([\s\S]+?)%>/g,
     interpolate: /<%=([\s\S]+?)%>/g,
@@ -2177,6 +2332,7 @@
 
   // Certain characters need to be escaped so that they can be put into a
   // string literal.
+  // 转义字符
   var escapes = {
     "'": "'",
     '\\': '\\',
@@ -2185,9 +2341,9 @@
     '\u2028': 'u2028',
     '\u2029': 'u2029'
   };
-
+  // 转义正则
   var escapeRegExp = /\\|'|\r|\n|\u2028|\u2029/g;
-
+  // 转义
   var escapeChar = function(match) {
     return '\\' + escapes[match];
   };
@@ -2196,6 +2352,12 @@
   // Underscore templating handles arbitrary delimiters, preserves whitespace,
   // and correctly escapes quotes within interpolated code.
   // NB: `oldSettings` only exists for backwards compatibility.
+  /**
+   * 渲染模板
+   * @param {*} text 
+   * @param {*} settings 
+   * @param {*} oldSettings 
+   */
   _.template = function(text, settings, oldSettings) {
     if (!settings && oldSettings) settings = oldSettings;
     settings = _.defaults({}, settings, _.templateSettings);
@@ -2254,6 +2416,9 @@
   };
 
   // Add a "chain" function. Start chaining a wrapped Underscore object.
+  /** 
+   * 使支持链式调用
+   */
   _.chain = function(obj) {
     var instance = _(obj);
     instance._chain = true;
@@ -2267,11 +2432,21 @@
   // underscore functions. Wrapped objects may be chained.
 
   // Helper function to continue chaining intermediate results.
+  /**
+   * obj让支持链式调用
+   * @param {*} instance 
+   * @param {*} obj 
+   */
   var chainResult = function(instance, obj) {
     return instance._chain ? _(obj).chain() : obj;
   };
 
   // Add your own custom functions to the Underscore object.
+  /**
+   * 混合器
+   * 获取obj上的方法，混合到包装对象中
+   * @param {*} obj 
+   */
   _.mixin = function(obj) {
     _.each(_.functions(obj), function(name) {
       var func = _[name] = obj[name];
@@ -2285,9 +2460,13 @@
   };
 
   // Add all of the Underscore functions to the wrapper object.
+  // 添加前有定义的方法到包装对象中
   _.mixin(_);
 
   // Add all mutator Array functions to the wrapper.
+  /**
+   * 将Array的方法添加到包装对象中，返回原本的list
+   */
   _.each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
     var method = ArrayProto[name];
     _.prototype[name] = function() {
@@ -2299,6 +2478,9 @@
   });
 
   // Add all accessor Array functions to the wrapper.
+  /**
+   * 将Array的方法添加到包装对象中，返回是新的list
+   */
   _.each(['concat', 'join', 'slice'], function(name) {
     var method = ArrayProto[name];
     _.prototype[name] = function() {
@@ -2307,6 +2489,9 @@
   });
 
   // Extracts the result from a wrapped and chained object.
+  /**
+   * 使用 value方法获取包装器
+   */
   _.prototype.value = function() {
     return this._wrapped;
   };
@@ -2326,6 +2511,9 @@
   // popular enough to be bundled in a third party lib, but not be part of
   // an AMD load request. Those cases could generate an error when an
   // anonymous define() is called outside of a loader request.
+  /**
+   * 兼容 AMD 规范
+   */ 
   if (typeof define == 'function' && define.amd) {
     define('underscore', [], function() {
       return _;
