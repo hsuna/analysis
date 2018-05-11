@@ -615,7 +615,7 @@
   // Shuffle a collection.
   /**
    * 获取一个乱序的数组
-   * @param {*} obj 可遍历对象
+   * @param obj 可遍历对象
    */
   _.shuffle = function(obj) {
     return _.sample(obj, Infinity);
@@ -657,9 +657,9 @@
   // Sort the object's values by a criterion produced by an iteratee.
   /**
    * 通过迭代器排序对象
-   * @param {*} obj 遍历对象
-   * @param {*} iteratee 迭代器
-   * @param {*} context 函数上下文
+   * @param obj 遍历对象
+   * @param iteratee 迭代器
+   * @param context 函数上下文
    */
   _.sortBy = function(obj, iteratee, context) {
     var index = 0;
@@ -685,8 +685,8 @@
   // An internal function used for aggregate "group by" operations.
   /**
    * 将对象进行分组
-   * @param {*} behavior 分组规则
-   * @param {*} partition 是否分类
+   * @param behavior 分组规则
+   * @param partition 是否分类
    */
   var group = function(behavior, partition) {
     return function(obj, iteratee, context) {
@@ -743,7 +743,7 @@
   // Safely create a real, live array from anything iterable.
   /**
    * 将对象，伪数组，字段，转化成数组
-   * @param {*} obj 
+   * @param obj 
    */
   _.toArray = function(obj) {
     if (!obj) return [];
@@ -762,7 +762,7 @@
   // Return the number of elements in an object.
   /**
    * 获取对象长度
-   * @param {*} obj 遍历对象
+   * @param obj 遍历对象
    */
   _.size = function(obj) {
     if (obj == null) return 0;
@@ -800,9 +800,9 @@
   // the array, excluding the last N.
   /**
    * 返回数组，剔除掉最后一个元素，如果存在n,则剔除最后n个
-   * @param {*} array 伪数组
-   * @param {*} n 数量
-   * @param {*} guard 保持值
+   * @param array 伪数组
+   * @param n 数量
+   * @param guard 保持值
    */
   _.initial = function(array, n, guard) {
     return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
@@ -824,9 +824,9 @@
   // the rest N values in the array.
     /**
    * 返回数组，剔除掉第一个元素，如果存在n,则剔除n个
-   * @param {*} array 伪数组
-   * @param {*} n 数量
-   * @param {*} guard 保持值
+   * @param array 伪数组
+   * @param n 数量
+   * @param guard 保持值
    */
   _.rest = _.tail = _.drop = function(array, n, guard) {
     return slice.call(array, n == null || guard ? 1 : n);
@@ -835,7 +835,7 @@
   // Trim out all falsy values from an array.
   /**
    * 过滤掉所有为空的值，包括0, false, '', NaN, null, undefined
-   * @param {*} array 
+   * @param array 
    */
   _.compact = function(array) {
     return _.filter(array, Boolean);
@@ -843,11 +843,11 @@
 
   // Internal implementation of a recursive `flatten` function.
   /**
-   * 将数组进行降维，既减多维降低成一维
-   * @param {*} input 降维数组
-   * @param {*} shallow 是否浅度降维(降低一维)
-   * @param {*} strict 
-   * @param {*} output 降维队列
+   * 将数组进行降维，既是多维降低成一维
+   * @param input 降维数组
+   * @param shallow 是否浅度降维(降低一维)
+   * @param strict 
+   * @param output 降维队列
    */
   var flatten = function(input, shallow, strict, output) {
     output = output || [];
@@ -900,10 +900,10 @@
   // Aliased as `unique`.
   /**
    * 数组去重
-   * @param {*} array 数组
-   * @param {*} isSorted 是否排序
-   * @param {*} iteratee 迭代器
-   * @param {*} context 函数的上下文
+   * @param array 数组
+   * @param isSorted 是否排序
+   * @param iteratee 迭代器
+   * @param context 函数的上下文
    */
   _.uniq = _.unique = function(array, isSorted, iteratee, context) {
     if (!_.isBoolean(isSorted)) {
@@ -952,7 +952,7 @@
   // passed-in arrays.
   /**
    * 获取多数组的交集
-   * @param {*} array
+   * @param array
    * ([1,2,3,5], [3,4,5,8],[1,3,5,7]) -> [3,5]
    */
   _.intersection = function(array) {
@@ -1186,8 +1186,8 @@
   // items.
   /**
    * 将单个数组转成多个数组
-   * @param {*} array 
-   * @param {*} count 每个数组的程度
+   * @param array 
+   * @param count 每个数组的程度
    * @example ([1,2,3,4,5], 2) -> [[1,2], [3,4], [5]]
    */
   _.chunk = function(array, count) {
@@ -1215,11 +1215,16 @@
    * @returns {*}
    */
   var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
+    //这里看了好久，主要是要区分普通函数和构造函数的差别
+    //如果是普通函数，则直接回调sourceFunc
     if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
-    //
+    //如果是构造函数，则使用baseCreate继承原型
     var self = baseCreate(sourceFunc.prototype);
+    //在将上下文指向会构造函数
     var result = sourceFunc.apply(self, args);
+    //如果是对象,说明新的构造函数有返回值,返回该对象
     if (_.isObject(result)) return result;
+    //否则返回构造函数的this
     return self;
   };
 
@@ -1228,8 +1233,12 @@
   // available.
   /**
    * 函数绑定，类是ES5的Function.bind
+   * @param func 函数
+   * @param context 函数上下文
+   * @param args 函数参数
    */
   _.bind = restArguments(function(func, context, args) {
+    //判定是否是函数
     if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
     var bound = restArguments(function(callArgs) {
       return executeBound(func, bound, context, this, args.concat(callArgs));
@@ -1241,14 +1250,24 @@
   // arguments pre-filled, without changing its dynamic `this` context. _ acts
   // as a placeholder by default, allowing any combination of arguments to be
   // pre-filled. Set `_.partial.placeholder` for a custom placeholder argument.
+  /**
+   * 局部应用函数部分参数，并默认填充其他参数
+   * @param func 函数
+   * @param boundArgs 填充参数
+   * func(a, b) -> foo = (func, _, b) -> foo(a)
+   */
   _.partial = restArguments(function(func, boundArgs) {
+    //参数占位符
     var placeholder = _.partial.placeholder;
     var bound = function() {
       var position = 0, length = boundArgs.length;
       var args = Array(length);
       for (var i = 0; i < length; i++) {
+        //如果是占位符，则使用占位的参数，否则使用绑定的参数
         args[i] = boundArgs[i] === placeholder ? arguments[position++] : boundArgs[i];
       }
+      // 将剩下的占位参数，添加入函数中
+      // 为什么这里不用slice呢，而是用while???
       while (position < arguments.length) args.push(arguments[position++]);
       return executeBound(func, bound, this, this, args);
     };
@@ -1260,17 +1279,30 @@
   // Bind a number of an object's methods to that object. Remaining arguments
   // are the method names to be bound. Useful for ensuring that all callbacks
   // defined on an object belong to it.
+  /**
+   * 将绑定对象方法的this指向object
+   * @param obj 
+   * @param keys 对象上需要绑定的key
+   */
   _.bindAll = restArguments(function(obj, keys) {
     keys = flatten(keys, false, false);
     var index = keys.length;
     if (index < 1) throw new Error('bindAll must be passed function names');
     while (index--) {
       var key = keys[index];
+      //将对象上的函数上下文绑定到对象上
       obj[key] = _.bind(obj[key], obj);
     }
   });
 
   // Memoize an expensive function by storing its results.
+  /**
+   * 缓存函数的计算结果
+   * 斐波那契数列求值优化问题的解决方案
+   * https://segmentfault.com/a/1190000007115162
+   * @param func 函数
+   * @param hasher 定义缓存地址
+   */
   _.memoize = function(func, hasher) {
     var memoize = function(key) {
       var cache = memoize.cache;
@@ -1284,6 +1316,12 @@
 
   // Delays a function for the given number of milliseconds, and then calls
   // it with the arguments supplied.
+  /**
+   * 延迟执行函数
+   * @param func 函数
+   * @param wait 等待时间(ms)
+   * @param args 函数参数
+   */
   _.delay = restArguments(function(func, wait, args) {
     return setTimeout(function() {
       return func.apply(null, args);
@@ -1292,6 +1330,7 @@
 
   // Defers a function, scheduling it to run after the current call stack has
   // cleared.
+  // 推迟函数，运行在定时进程上
   _.defer = _.partial(_.delay, _, 1);
 
   // Returns a function, that, when invoked, will only be triggered at most once
@@ -1299,6 +1338,13 @@
   // as much as it can, without ever going more than once per `wait` duration;
   // but if you'd like to disable the execution on the leading edge, pass
   // `{leading: false}`. To disable execution on the trailing edge, ditto.
+  /**
+   * 函数节流
+   * @param func 函数
+   * @param wait 等待时间(ms)
+   * @param options {leading: false, trailing: false}
+   * 
+   */
   _.throttle = function(func, wait, options) {
     var timeout, context, args, result;
     var previous = 0;
@@ -1344,6 +1390,12 @@
   // be triggered. The function will be called after it stops being called for
   // N milliseconds. If `immediate` is passed, trigger the function on the
   // leading edge, instead of the trailing.
+  /**
+   * 函数去抖
+   * @param func 函数
+   * @param wait 等待时间(ms)
+   * @param immediate immediate
+   */
   _.debounce = function(func, wait, immediate) {
     var timeout, result;
 
@@ -1463,7 +1515,7 @@
   /**
    * 获取Object所有可枚举的属性
    * 类似ES5的Object.keys
-   * @param {*} obj 
+   * @param obj 
    */
   _.keys = function(obj) {
     if (!_.isObject(obj)) return [];
@@ -1478,7 +1530,7 @@
   // Retrieve all the property names of an object.
   /**
    * 获取Object所有的属性
-   * @param {*} obj 
+   * @param obj 
    */
   _.allKeys = function(obj) {
     if (!_.isObject(obj)) return [];
@@ -1492,7 +1544,7 @@
   // Retrieve the values of an object's properties.
   /**
    * 获取Object所有可枚举的属性值
-   * @param {*} obj 
+   * @param obj 
    */
   _.values = function(obj) {
     var keys = _.keys(obj);
@@ -1508,9 +1560,9 @@
   // In contrast to _.map it returns an object.
   /**
    * 将对象的每个属性进行转换
-   * @param {*} obj 
-   * @param {*} iteratee 
-   * @param {*} context 
+   * @param obj 
+   * @param iteratee 
+   * @param context 
    */
   _.mapObject = function(obj, iteratee, context) {
     iteratee = cb(iteratee, context);
@@ -1529,7 +1581,7 @@
   // The opposite of _.object.
   /**
    * 将一个对象转化成数组形式：[key, value]
-   * @param {*} obj 
+   * @param obj 
    */
   _.pairs = function(obj) {
     var keys = _.keys(obj);
@@ -1544,7 +1596,7 @@
   // Invert the keys and values of an object. The values must be serializable.
   /**
    * 将一个对象的key和value调换：obj[value] = key
-   * @param {*} obj 
+   * @param obj 
    */
   _.invert = function(obj) {
     var result = {};
@@ -1559,7 +1611,7 @@
   // Aliased as `methods`.
   /**
    * 获取一个对象里的所有方法, 并进行排序
-   * @param {*} obj 
+   * @param obj 
    */
   _.functions = _.methods = function(obj) {
     var names = [];
@@ -1717,11 +1769,16 @@
   };
 
   // Internal recursive comparison function for `isEqual`.
+  /**
+   * _.isEqual 判定对象是否相等
+   */
   deepEq = function(a, b, aStack, bStack) {
     // Unwrap any wrapped objects.
+    // 将_wrapped取出来
     if (a instanceof _) a = a._wrapped;
     if (b instanceof _) b = b._wrapped;
     // Compare `[[Class]]` names.
+    //如果类型不相同的话
     var className = toString.call(a);
     if (className !== toString.call(b)) return false;
     switch (className) {
@@ -1735,8 +1792,10 @@
       case '[object Number]':
         // `NaN`s are equivalent, but non-reflexive.
         // Object(NaN) is equivalent to NaN.
-        if (+a !== +a) return +b !== +b;
+        // 如果a和b是NaN的话
+        if (+a !== +a) return +b !== +b;//
         // An `egal` comparison is performed for other numeric values.
+        // 1 / +a === 1 / b 是为了判定 0 === -0为false
         return +a === 0 ? 1 / +a === 1 / b : +a === +b;
       case '[object Date]':
       case '[object Boolean]':
@@ -1826,6 +1885,10 @@
 
   // Is a given value an array?
   // Delegates to ECMA5's native Array.isArray
+  /**
+   * 判定数组
+   * 优先使用ES5的Array.isArray
+   */
   _.isArray = nativeIsArray || function(obj) {
     return toString.call(obj) === '[object Array]';
   };
