@@ -1342,42 +1342,60 @@
    * 函数节流
    * @param func 函数
    * @param wait 等待时间(ms)
-   * @param options {leading: false, trailing: false}
-   * 
+   * @param options {leading: false, trailing: true}
    */
   _.throttle = function(func, wait, options) {
     var timeout, context, args, result;
+    // 上一次时间
     var previous = 0;
     if (!options) options = {};
 
+    // 延迟函数
     var later = function() {
+      // leading
+      // 重置时间
       previous = options.leading === false ? 0 : _.now();
+      // 将定时器设置成null
       timeout = null;
+      // 实现函数
       result = func.apply(context, args);
+      // 对timeout进行判断，是因为外部可能重复调用，
+      // 进程不一，可能会导致timeout设置成null后，又被赋值的情况
       if (!timeout) context = args = null;
     };
 
     var throttled = function() {
       var now = _.now();
+      // 如果previous为0，说明未进入周期
+      // leading表示是否在开启周期时，调用函数，默认true
       if (!previous && options.leading === false) previous = now;
+      // 周期剩余时间
       var remaining = wait - (now - previous);
       context = this;
       args = arguments;
+      // 如果周期时间小于或等于0，说明进入下一周期
+      // 而remaining大于wait，其实就是previous > now，表示客户端被修改了
       if (remaining <= 0 || remaining > wait) {
         if (timeout) {
           clearTimeout(timeout);
           timeout = null;
         }
+        // 缓存执行时间
         previous = now;
         result = func.apply(context, args);
+        // 同上
         if (!timeout) context = args = null;
+        // 表示是否trailing表示是否执行函数
       } else if (!timeout && options.trailing !== false) {
+        //trailing表示是否在关闭周期前，调用函数，默认true
         timeout = setTimeout(later, remaining);
       }
       return result;
     };
 
+    //关闭函数节流
     throttled.cancel = function() {
+      //清除定时器之类的
       clearTimeout(timeout);
       previous = 0;
       timeout = context = args = null;
@@ -1391,32 +1409,40 @@
   // N milliseconds. If `immediate` is passed, trigger the function on the
   // leading edge, instead of the trailing.
   /**
-   * 函数去抖
+   * 函数防抖
    * @param func 函数
    * @param wait 等待时间(ms)
-   * @param immediate immediate
+   * @param immediate
    */
   _.debounce = function(func, wait, immediate) {
     var timeout, result;
 
     var later = function(context, args) {
+      //清除计时器
       timeout = null;
       if (args) result = func.apply(context, args);
     };
 
     var debounced = restArguments(function(args) {
+      // 如果存在上一计时器，则清除，重新计时
       if (timeout) clearTimeout(timeout);
+      // immediate表示执行前，先尝试调用一次函数，默认false
       if (immediate) {
+        // 将timeout是否为null，提取出来
         var callNow = !timeout;
+        // 这里先设置定时器，再判定callNow
+        // 如果先判定callNow的话，那下一次进来时，timeout依然为null，这样判定就会有问题
         timeout = setTimeout(later, wait);
         if (callNow) result = func.apply(this, args);
       } else {
+        //延迟执行
         timeout = _.delay(later, wait, this, args);
       }
 
       return result;
     });
 
+    //关闭定时器
     debounced.cancel = function() {
       clearTimeout(timeout);
       timeout = null;
@@ -1428,6 +1454,11 @@
   // Returns the first function passed as an argument to the second,
   // allowing you to adjust arguments, run code before and after, and
   // conditionally execute the original function.
+  /**
+   * 将第一个函数封装到第二个函数里面
+   * @param {*} func 
+   * @param {*} wrapper 
+   */
   _.wrap = function(func, wrapper) {
     return _.partial(wrapper, func);
   };
@@ -1442,6 +1473,10 @@
 
   // Returns a function that is the composition of a list of functions, each
   // consuming the return value of the function that follows.
+  /**
+   * 复合函数
+   * f(), g(), h() -> f(g(h()))
+   */
   _.compose = function() {
     var args = arguments;
     var start = args.length - 1;
@@ -1454,6 +1489,11 @@
   };
 
   // Returns a function that will only be executed on and after the Nth call.
+  /**
+   * 创建一个函数，限制调用超过times次才有返回值
+   * @param {*} times 次数
+   * @param {*} func 
+   */
   _.after = function(times, func) {
     return function() {
       if (--times < 1) {
@@ -1463,6 +1503,11 @@
   };
 
   // Returns a function that will only be executed up to (but not including) the Nth call.
+  /**
+   * 创建一个函数，限制调用不超过times次
+   * @param {*} times 次数
+   * @param {*} func 
+   */
   _.before = function(times, func) {
     var memo;
     return function() {
@@ -1610,7 +1655,7 @@
   // Return a sorted list of the function names available on the object.
   // Aliased as `methods`.
   /**
-   * 获取一个对象里的所有方法, 并进行排序
+   * 获取一个对象里的所有方法名, 并进行排序
    * @param obj 
    */
   _.functions = _.methods = function(obj) {
@@ -1622,6 +1667,12 @@
   };
 
   // An internal function for creating assigner functions.
+  /**
+   * 创建分配器函数
+   * 类似ES6 Object.assign
+   * @param {*} keysFunc 获取keys的方法
+   * @param {*} defaults 是否使用默认属性值，如果有的话，默认为false，既是不覆盖
+   */
   var createAssigner = function(keysFunc, defaults) {
     return function(obj) {
       var length = arguments.length;
@@ -1629,10 +1680,12 @@
       if (length < 2 || obj == null) return obj;
       for (var index = 1; index < length; index++) {
         var source = arguments[index],
+        // 获取对象的keys
             keys = keysFunc(source),
             l = keys.length;
         for (var i = 0; i < l; i++) {
           var key = keys[i];
+          // 如果是覆盖或者是key不存在的情况
           if (!defaults || obj[key] === void 0) obj[key] = source[key];
         }
       }
@@ -1641,10 +1694,12 @@
   };
 
   // Extend a given object with all the properties in passed-in object(s).
+  // 分配所有keys，包括不可枚举的
   _.extend = createAssigner(_.allKeys);
 
   // Assigns a given object with all the own properties in the passed-in object(s).
   // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
+  // 分配所有可枚举的keys
   _.extendOwn = _.assign = createAssigner(_.keys);
 
   // Returns the first key on an object that passes a predicate test.
